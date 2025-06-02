@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Anda Segera Dialihkan...</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+
+  <style>
+    /* CSS tetap sama seperti versi PHP sebelumnya, saya singkat di sini untuk keringkasan */
+    /* === Global Styling === */
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";text-align:center;margin:0;padding:20px;background-color:#f0f2f5;color:#333;display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:100vh;box-sizing:border-box}
+    /* === Layout Container === */
+    .container-redirect{background-color:#fff;padding:30px 40px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,.1);max-width:500px;width:100%;margin:20px}
+    /* === Typography === */
+    .container-redirect h2{color:#1a73e8;margin-top:0;margin-bottom:15px;font-size:1.8em}
+    .container-redirect p{font-size:1.1em;line-height:1.6;margin-bottom:20px}
+    /* === Countdown Styling === */
+    .countdown{font-size:1.5em;font-weight:700;color:#d93025;margin-top:25px;margin-bottom:25px}
+    .countdown #timer{padding:5px 10px;background-color:#fce8e6;border-radius:6px}
+    /* === Manual Redirect Button === */
+    .manual-redirect-btn{display:none;margin-top:20px;padding:12px 25px;font-size:1.1em;font-weight:700;background-color:#1a73e8;color:#fff;text-decoration:none;border-radius:8px;border:none;cursor:pointer;transition:background-color .3s ease}
+    .manual-redirect-btn:hover,.manual-redirect-btn:focus{background-color:#1558b0;outline:none}
+    /* === Ad Placeholder Styling === */
+    .ads-placeholder{min-height:50px;margin:25px 0;}
+    /* === Destination Info Styling === */
+    .destination-info{font-size:.9em;color:#5f6368;margin-top:15px;word-break:break-all}
+  </style>
+  <noscript>
+    <style>
+      .manual-redirect-btn { display: inline-block !important; }
+      .countdown { display: none !important; }
+      #adsAreaJS { display: none !important; } /* Sembunyikan area iklan JS jika JS mati */
+    </style>
+  </noscript>
+</head>
+<body>
+  <div class="container-redirect">
+    <h2>Harap Tunggu Sebentar...</h2>
+    <p id="mainMessage">Anda sedang dalam proses pengalihan ke tujuan yang Anda minta.</p>
+
+    <div class="ads-placeholder" id="adsAreaJS">
+      <p style="font-size:0.8em; color:#999; margin:0;"><i>Area Iklan (Jika aktif)</i></p>
+    </div>
+
+    <div class="countdown">Anda akan dialihkan dalam <span id="timer">5</span> detik</div>
+    <p class="destination-info">Tujuan: <span id="destinationDomain">memuat...</span></p>
+
+    <a href="#" class="manual-redirect-btn" id="manualRedirectButton" rel="noopener noreferrer nofollow">Lanjutkan Sekarang</a>
+    
+    <div id="noScriptMessage" style="display:none;">
+        <p>JavaScript diperlukan untuk pengalihan otomatis. Silakan klik tombol di atas untuk melanjutkan manual, atau aktifkan JavaScript.</p>
+    </div>
+  </div>
+
+  <script>
+    // --- Konfigurasi ---
+    const defaultFallbackUrl = 'https://google.com'; // URL fallback jika parameter tidak valid
+    const waitTime = 5; // Durasi tunggu dalam detik
+
+    // --- Elemen DOM ---
+    const timerElement = document.getElementById('timer');
+    const manualRedirectButton = document.getElementById('manualRedirectButton');
+    const destinationDomainElement = document.getElementById('destinationDomain');
+    const mainMessageElement = document.getElementById('mainMessage');
+    const noScriptDisplay = document.getElementById('noScriptMessage'); // Untuk pesan jika JS gagal parse URL
+
+    // --- Fungsi untuk mengambil dan memvalidasi URL dari parameter ---
+    function getTargetUrlFromParams() {
+      const urlParams = new URLSearchParams(window.location.search);
+      let targetUrl = urlParams.get('url');
+
+      if (targetUrl) {
+        try {
+          // Decode URL yang mungkin double-encoded atau memiliki karakter khusus
+          targetUrl = decodeURIComponent(targetUrl); 
+        } catch (e) {
+          console.error("Error decoding URL:", e);
+          targetUrl = null; // Anggap tidak valid jika ada error decoding
+        }
+      }
+
+      // Validasi dasar URL (harus http atau https)
+      if (!targetUrl || !/^https?:\/\//i.test(targetUrl)) {
+        console.warn('Invalid or missing URL parameter, using fallback.');
+        if(mainMessageElement) mainMessageElement.innerText = "URL tujuan tidak valid. Anda akan dialihkan ke halaman default.";
+        return defaultFallbackUrl;
+      }
+      return targetUrl;
+    }
+
+    // --- Inisialisasi ---
+    const finalTargetUrl = getTargetUrlFromParams();
+    let timeLeft = waitTime;
+
+    // Set timer awal
+    if (timerElement) {
+      timerElement.innerText = timeLeft;
+    }
+
+    // Set href untuk tombol manual dan tampilkan domain tujuan
+    if (manualRedirectButton) {
+      manualRedirectButton.href = finalTargetUrl;
+    }
+    if (destinationDomainElement) {
+      try {
+        const urlObject = new URL(finalTargetUrl);
+        destinationDomainElement.innerText = urlObject.hostname;
+      } catch (e) {
+        destinationDomainElement.innerText = 'tujuan eksternal';
+      }
+    }
+    
+    // Tampilkan pesan jika URL tidak valid dan menggunakan fallback (setelah fungsi getTargetUrlFromParams)
+    if (finalTargetUrl === defaultFallbackUrl && urlParams.has('url') && urlParams.get('url') !== '') {
+        // Kondisi ini berarti ada parameter 'url', tapi tidak valid, sehingga fallback digunakan.
+        // Pesan sudah diatur di getTargetUrlFromParams.
+    }
+
+
+    // --- Logika Countdown dan Redirect ---
+    let countdownInterval = null; // Deklarasikan di luar agar bisa di-clear
+    if (finalTargetUrl) { // Hanya jalankan countdown jika ada target URL valid
+        countdownInterval = setInterval(() => {
+            timeLeft--;
+            if (timerElement) {
+            timerElement.innerText = timeLeft;
+            }
+
+            if (timeLeft <= 0) {
+            clearInterval(countdownInterval);
+            window.location.href = finalTargetUrl;
+            }
+        }, 1000);
+
+        // Tampilkan tombol "Lanjutkan Sekarang"
+        const showButtonDelay = Math.max(0, Math.min(2000, (timeLeft - 1) * 1000));
+        if (manualRedirectButton) {
+            setTimeout(() => {
+                manualRedirectButton.style.display = 'inline-block';
+            }, showButtonDelay);
+
+            manualRedirectButton.addEventListener('click', function(event) {
+                // Meskipun href sudah diset, kita cegah default untuk konsistensi jika ada analytics/logging di masa depan
+                event.preventDefault(); 
+                clearInterval(countdownInterval);
+                window.location.href = finalTargetUrl;
+            });
+        }
+    } else {
+        // Jika finalTargetUrl tidak ada (error atau fallback), pastikan UI sesuai
+        if (timerElement) timerElement.innerText = 'Error';
+        if (manualRedirectButton) manualRedirectButton.style.display = 'inline-block'; // Tombol fallback harus selalu ada
+        if (noScriptDisplay) noScriptDisplay.style.display = 'block'; // Tampilkan pesan error/noscript
+    }
+    
+    // Handle <noscript> case (walaupun <noscript> tag CSS sudah ada, ini untuk pesan tambahan jika diperlukan)
+    // Cek jika elemen <noscript> memiliki style display: block dari CSS <noscript>
+    // Ini agak redundant karena CSS <noscript> sudah menangani tampilan tombol.
+    // Tapi bisa digunakan untuk menampilkan pesan tambahan.
+    // document.addEventListener('DOMContentLoaded', () => {
+    //     const noscriptStyles = window.getComputedStyle(noScriptDisplay);
+    //     if (noscriptStyles.display === 'block' && manualRedirectButton) {
+    //         manualRedirectButton.href = defaultFallbackUrl; // Pastikan tombol noscript mengarah ke fallback jika URL asli tidak bisa diparsing tanpa JS
+    //     }
+    // });
+
+  </script>
+</body>
+</html>
