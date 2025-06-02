@@ -16,9 +16,11 @@ $target = $_GET['url'] ?? 'https://google.com';
 </head>
 <body>
   <h2>Tunggu sebentar...</h2>
-  <!-- 👇 PASANG KODE IKLAN DI SINI -->
+ <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4454451699877502"
+     crossorigin="anonymous"></script>
   <div>
-    <!-- Contoh: Kode PopAds / PropellerAds -->
+   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4454451699877502"
+     crossorigin="anonymous"></script>
   </div>
 
   <div class="countdown">Anda akan dialihkan dalam <span id="timer">5</span> detik</div>
